@@ -15,3 +15,9 @@ spring:
 
 jwt:
   signerKey: "SSK9eMPla1BcwJY6df2hHud2sg0DSG5GBsLL5vT69v/Q+WJbSluRzzR/CZDiVTBV"
+  valid-duration: 10 #in second
+  refreshable-duration: 120 #in seconds
+
+logging:
+  level:
+    org.springframework.security: DEBUG

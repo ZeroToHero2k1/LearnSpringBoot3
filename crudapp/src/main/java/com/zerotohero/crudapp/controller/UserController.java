@@ -7,13 +7,16 @@ import com.zerotohero.crudapp.dto.response.UserResponse;
 import com.zerotohero.crudapp.entity.User;
 import com.zerotohero.crudapp.service.UserService;
 import jakarta.validation.Valid;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/users")
+@Slf4j
 public class UserController {
     @Autowired
     private UserService userService;
@@ -25,20 +28,30 @@ public class UserController {
         return apiResponse;
     }
     @GetMapping
-    List<User> getUsers(){
-        return userService.getUsers();
+    ApiResponse<List<UserResponse>> getUsers(){
+        var authentication=SecurityContextHolder.getContext().getAuthentication();
+        log.info("User name: {}",authentication.getName());
+        authentication.getAuthorities().forEach(grantedAuthority -> log.info(grantedAuthority.getAuthority()));
+
+        return ApiResponse.<List<UserResponse>>builder().result(userService.getUsers()).build();
     }
     @GetMapping("/{userId}")
-    UserResponse getUserById(@PathVariable("userId") String userId){
-        return userService.getUserById(userId);
+    ApiResponse<UserResponse> getUserById(@PathVariable("userId") String userId){
+        return ApiResponse.<UserResponse>builder().result(userService.getUserById(userId)).build();
     }
+
+    @GetMapping("/myinfo")
+    ApiResponse<UserResponse> getMyInfo(){
+        return ApiResponse.<UserResponse>builder().result(userService.getMyInfo()).build();//ảo vcl ko cần truyền gì, lấy user từ token
+    }
+
     @PutMapping("/{userId}")
-    UserResponse updateUserById(@PathVariable String userId,@RequestBody UserUpdateRequest request){
-        return userService.updateUserById(userId,request);
+    ApiResponse<UserResponse> updateUserById(@PathVariable String userId,@RequestBody UserUpdateRequest request){
+        return ApiResponse.<UserResponse>builder().result(userService.updateUserById(userId,request)).build();
     }
     @DeleteMapping("/{userId}")
-    String deleteUserById(@PathVariable String userId){
+    ApiResponse deleteUserById(@PathVariable String userId){
         userService.deleteUserById(userId);
-        return "User has been deleted";
+        return ApiResponse.builder().result("User has been deleted").build();
     }
 }
