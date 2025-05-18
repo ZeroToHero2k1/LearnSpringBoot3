@@ -1,9 +1,8 @@
 package com.zerotohero.crudapp.controller;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import com.zerotohero.crudapp.dto.request.UserCreationRequest;
-import com.zerotohero.crudapp.dto.response.RoleResponse;
 import com.zerotohero.crudapp.dto.response.UserResponse;
 import com.zerotohero.crudapp.mapper.RoleMapper;
 import com.zerotohero.crudapp.repository.RoleRepository;
@@ -18,14 +17,15 @@ import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.context.TestConfiguration;
+import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.assertj.MockMvcTester;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import java.time.LocalDate;
-import java.util.HashSet;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -34,26 +34,32 @@ import java.util.stream.Collectors;
 @Slf4j
 @AutoConfigureMockMvc
 public class UserControllerTest {
-    @Mock
-    private RoleRepository roleRepository;
-
     @Autowired
     private MockMvc mockMvc;
 
-    @InjectMocks
+    @Autowired
     private UserService userService;
+
+    @TestConfiguration
+    static class TestConfig {
+        @Bean
+        public UserService userService() {
+            return Mockito.mock(UserService.class);
+        }
+    }
 
     private UserCreationRequest userCreationRequest;
     private UserResponse userResponse;
     private LocalDate dob;
     private List<String> lstRoleRequest;
-    private RoleMapper roleMapper;
 
     @BeforeEach
     void initData(){
-        dob=LocalDate.of(1990,12,12);
-        lstRoleRequest.add("USER");
-        userCreationRequest= UserCreationRequest.builder()
+
+        dob = LocalDate.of(1990, 12, 12);
+        lstRoleRequest = List.of("USER");
+
+        userCreationRequest = UserCreationRequest.builder()
                 .username("john123")
                 .firstName("john")
                 .lastName("paul")
@@ -62,22 +68,21 @@ public class UserControllerTest {
                 .roles(lstRoleRequest)
                 .build();
 
-        var lstRole=roleRepository.findAllById(lstRoleRequest);
-        var lstRoleResponse= lstRole.stream().map(roleMapper::toRoleResponse).collect(Collectors.toSet());
-
-        userResponse=userResponse.builder()
+        userResponse = UserResponse.builder()
                 .username("john123")
                 .firstName("john")
                 .lastName("paul")
                 .dob(dob)
-                .roles(lstRoleResponse)
+                .roles(Set.of()) // test logic không cần roles thật
                 .build();
+
     }
 
     @Test
-    void createUser() throws Exception {
+    void createUser_validRequest_success() throws Exception {
         //Given
         ObjectMapper objectMapper=new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
         String content=objectMapper.writeValueAsString(userCreationRequest);
 
         Mockito.when(userService.createUser(ArgumentMatchers.any())).thenReturn(userResponse);
