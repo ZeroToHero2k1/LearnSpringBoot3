@@ -20,6 +20,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
@@ -33,6 +34,7 @@ import java.util.stream.Collectors;
 @SpringBootTest
 @Slf4j
 @AutoConfigureMockMvc
+@TestPropertySource("/test.properties")
 public class UserControllerTest {
     @Autowired
     private MockMvc mockMvc;
@@ -69,6 +71,7 @@ public class UserControllerTest {
                 .build();
 
         userResponse = UserResponse.builder()
+                .id("cf0600f538b3")
                 .username("john123")
                 .firstName("john")
                 .lastName("paul")
@@ -92,7 +95,27 @@ public class UserControllerTest {
                 .contentType(MediaType.APPLICATION_JSON_VALUE)
                 .content(content))
                 .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("code").value(1000)
+                .andExpect(MockMvcResultMatchers.jsonPath("code").value(1000))
+                .andExpect(MockMvcResultMatchers.jsonPath("result.id").value("cf0600f538b3")
         );
+    }
+
+    @Test
+    void createUser_invalidRequest_fail() throws Exception {
+        //Given
+        userCreationRequest.setUsername("leo");
+        ObjectMapper objectMapper=new ObjectMapper();
+        objectMapper.registerModule(new JavaTimeModule());
+        String content=objectMapper.writeValueAsString(userCreationRequest);
+
+        //When,Then
+        mockMvc.perform(MockMvcRequestBuilders
+                        .post("/users")
+                        .contentType(MediaType.APPLICATION_JSON_VALUE)
+                        .content(content))
+                .andExpect(MockMvcResultMatchers.status().isBadRequest())
+                .andExpect(MockMvcResultMatchers.jsonPath("code").value(1003))
+                .andExpect(MockMvcResultMatchers.jsonPath("message").value("Username invalid, username at least 4 words")
+                );
     }
 }
